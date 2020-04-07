@@ -16,36 +16,48 @@
 
             <ul>
 
-              <li>
-                <label for="title">Article Title</label>
-                <input type="text" name="title" id="title" placeholder="Name of the article" required autofocus maxlength="255" value="<?php echo htmlspecialchars( $results['article']->title )?>" />
-              </li>
+                <li>
+                    <label for="title">Article Title</label>
+                    <input type="text" name="title" id="title" placeholder="Name of the article" required autofocus
+                           maxlength="255" value="<?php echo htmlspecialchars($results['article']->title) ?>"/>
+                </li>
 
-              <li>
-                <label for="summary">Article Summary</label>
-                <textarea name="summary" id="summary" placeholder="Brief description of the article" required maxlength="1000" style="height: 5em;"><?php echo htmlspecialchars( $results['article']->summary )?></textarea>
-              </li>
+                <li>
+                    <label for="summary">Article Summary</label>
+                    <textarea name="summary" id="summary" placeholder="Brief description of the article" required
+                              maxlength="1000"
+                              style="height: 5em;"><?php echo htmlspecialchars($results['article']->summary) ?></textarea>
+                </li>
 
-              <li>
-                <label for="content">Article Content</label>
-                <textarea name="content" id="content" placeholder="The HTML content of the article" required maxlength="100000" style="height: 30em;"><?php echo htmlspecialchars( $results['article']->content )?></textarea>
-              </li>
+                <li>
+                    <label for="content">Article Content</label>
+                    <textarea name="content" id="content" placeholder="The HTML content of the article" required
+                              maxlength="100000"
+                              style="height: 30em;"><?php echo htmlspecialchars($results['article']->content) ?></textarea>
+                </li>
 
-              <li>
-                <label for="categoryId">Article Category</label>
-                <select name="categoryId">
-                  <option value="0"<?php echo !$results['article']->categoryId ? " selected" : ""?>>(none)</option>
-                <?php foreach ( $results['categories'] as $category ) { ?>
-                  <option value="<?php echo $category->id?>"<?php echo ( $category->id == $results['article']->categoryId ) ? " selected" : ""?>><?php echo htmlspecialchars( $category->name )?></option>
-                <?php } ?>
-                </select>
-              </li>
+                <li>
+                    <label for="categoryId">Article Category</label>
+                    <select name="categoryId">
+                        <option value="0"<?php echo !$results['article']->categoryId ? " selected" : "" ?>>(none)
+                        </option>
+                        <?php foreach ($results['categories'] as $category) { ?>
+                            <option value="<?php echo $category->id ?>"<?php echo ($category->id == $results['article']->categoryId) ? " selected" : "" ?>><?php echo htmlspecialchars($category->name) ?></option>
+                        <?php } ?>
+                    </select>
+                </li>
 
-              <li>
-                <label for="publicationDate">Publication Date</label>
-                <input type="date" name="publicationDate" id="publicationDate" placeholder="YYYY-MM-DD" required maxlength="10" value="<?php echo $results['article']->publicationDate ? date( "Y-m-d", $results['article']->publicationDate ) : "" ?>" />
-              </li>
+                <li>
+                    <label for="publicationDate">Publication Date</label>
+                    <input type="date" name="publicationDate" id="publicationDate" placeholder="YYYY-MM-DD" required
+                           maxlength="10"
+                           value="<?php echo $results['article']->publicationDate ? date("Y-m-d", $results['article']->publicationDate) : "" ?>"/>
+                </li>
 
+                <li>
+                    <label for="isActive">Active status: </label>
+                    <input type="checkbox" name="isActive" id="isActive" <?php if (($results['article']->isActive)) echo 'checked' ?>>
+                </li>
 
             </ul>
 

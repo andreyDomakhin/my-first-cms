@@ -38,6 +38,18 @@ switch ($action) {
     case 'deleteCategory':
         deleteCategory();
         break;
+    case 'listUsers':
+        listUsers();
+        break;
+    case 'editUser':
+        editUser();
+        break;
+    case 'newUser':
+        newUser();
+        break;
+    case 'deleteUser':
+        deleteUser();
+        break;
     default:
         listArticles();
 }
@@ -51,23 +63,25 @@ function login() {
     $results['pageTitle'] = "Admin Login | Widget News";
 
     if (isset($_POST['login'])) {
-
-        // Пользователь получает форму входа: попытка авторизировать пользователя
-
-        if ($_POST['username'] == ADMIN_USERNAME 
-                && $_POST['password'] == ADMIN_PASSWORD) {
-
-          // Вход прошел успешно: создаем сессию и перенаправляем на страницу администратора
-          $_SESSION['username'] = ADMIN_USERNAME;
-          header( "Location: admin.php");
-
+        if (!$user = User::getByLogin((string) $_POST['username'])) {
+            $results['errorMessage'] = "Неправильный логин или пароль, попробуйте еще раз.";
+            require(TEMPLATE_PATH . "/admin/loginForm.php");
         } else {
+            if ($user->blocked == 1) {
+                $results['errorMessage'] = "Аккаунт заблокирован";
+                require(TEMPLATE_PATH . "/admin/loginForm.php");
+                // Вход прошел успешно: создаем сессию и перенаправляем на страницу администратора
+            } elseif ($_POST['username'] == $user->login
+                && $_POST['password'] == $user->password && $user->blocked == 0) {
 
-          // Ошибка входа: выводим сообщение об ошибке для пользователя
-          $results['errorMessage'] = "Неправильный пароль, попробуйте ещё раз.";
-          require( TEMPLATE_PATH . "/admin/loginForm.php" );
+                $user->password = null;
+                $_SESSION['username'] = $user->login;
+                header("Location: admin.php");
+            } else {
+                $results['errorMessage'] = "Неправильный логин или пароль, попробуйте еще раз.";
+                require(TEMPLATE_PATH . "/admin/loginForm.php");
+            }
         }
-
     } else {
 
       // Пользователь еще не получил форму: выводим форму
@@ -158,6 +172,41 @@ function editArticle() {
 
 }
 
+/**
+ * Редактирование пользователя
+ *
+ * @return null
+ */
+function editUser()
+{
+    $results = [];
+    $results['pageTitle'] = "Edit User";
+    $results['formAction'] = "editUser";
+    $user = null;
+
+    if (isset($_POST['saveChanges'])) {
+
+        // Пользователь получил форму редактирования статьи: сохраняем изменения
+        if ( !$user = User::getById( (int)$_POST['userId'] ) ) {
+            header( "Location: admin.php?error=userNotFound" );
+            return;
+        }
+        $user->storeFormValues( $_POST );
+        $user->update();
+        header( "Location: admin.php?action=listUsers&status=changesSaved" );
+
+    } elseif ( isset( $_POST['cancel'] ) ) {
+
+        // Пользователь отказался от результатов редактирования: возвращаемся к списку статей
+        header( "Location: admin.php?action=listUsers" );
+    } else {
+
+        // Пользвоатель еще не получил форму редактирования: выводим форму
+        $results['user'] = User::getById((int)$_GET['userId']);
+        require(TEMPLATE_PATH . "/admin/editUser.php");
+    }
+}
+
 
 function deleteArticle() {
 
@@ -170,11 +219,22 @@ function deleteArticle() {
     header( "Location: admin.php?status=articleDeleted" );
 }
 
+function deleteUser()
+{
+    if (!$user = User::getById((int)$_GET['userId'])) {
+        header('Location: admin.php?error=userNotFound');
+        return;
+    }
+
+    $user->delete();
+    header('Location: admin.php?status=articleDeleted');
+}
+
 
 function listArticles() {
     $results = array();
     
-    $data = Article::getList();
+    $data = Article::getList(1000000, false);
     $results['articles'] = $data['results'];
     $results['totalRows'] = $data['totalRows'];
     
@@ -222,7 +282,26 @@ function listCategories() {
 
     require( TEMPLATE_PATH . "/admin/listCategories.php" );
 }
-	  
+
+function listUsers()
+{
+    $results = [];
+    $data = User::getList();
+    $results['users'] = $data['results'];
+    $results['totalRows'] = $data['totalRows'];
+    $res['pageTitle'] = 'Users';
+
+    if (isset($_GET['error'])) {
+        if ($_GET['error'] == 'userNotFound') $results['errorMessage'] = "Error: User not found.";
+    }
+
+    if (isset($_GET['status'])) {
+        if ($_GET['status'] == 'changesSaved') $results['statusMessage'] = 'Your changes have been saved.';
+        if ($_GET['status'] == 'userDeleted') $results['statusMessage'] = 'User deleted.';
+    }
+
+    require_once (TEMPLATE_PATH . '/admin/listUsers.php');
+}
 	  
 function newCategory() {
 
@@ -249,6 +328,32 @@ function newCategory() {
         require( TEMPLATE_PATH . "/admin/editCategory.php" );
     }
 
+}
+
+function newUser()
+{
+    $results = [];
+    $results['pageTitle'] = "New User";
+    $results['formAction'] = "newUser";
+
+    if ( isset( $_POST['saveChanges'] ) ) {
+
+        // User has posted the category edit form: save the new category
+        $user = new User;
+        $user->storeFormValues( $_POST );
+        $user->insert();
+        header( "Location: admin.php?action=listUsers&status=changesSaved" );
+
+    } elseif ( isset( $_POST['cancel'] ) ) {
+
+        // User has cancelled their edits: return to the category list
+        header( "Location: admin.php?action=listUsers" );
+    } else {
+
+        // User has not posted the category edit form yet: display the form
+        $results['user'] = new User;
+        require( TEMPLATE_PATH . "/admin/editUser.php" );
+    }
 }
 
 

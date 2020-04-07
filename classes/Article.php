@@ -36,6 +36,12 @@ class Article
     * @var string HTML содержание статьи
     */
     public $content = null;
+
+    /**
+     * @var bool Статус активности статьи
+     */
+    public $isActive = null;
+
     /**
     * Устанавливаем свойства с помощью значений в заданном массиве
     *
@@ -84,6 +90,10 @@ class Article
       
       if (isset($data['content'])) {
           $this->content = $data['content'];  
+      }
+
+      if (isset($data['active'])) {
+          $this->isActive = $data['active'];
       }
     }
 
@@ -137,19 +147,27 @@ class Article
     * Возвращает все (или диапазон) объекты Article из базы данных
     *
     * @param int $numRows Количество возвращаемых строк (по умолчанию = 1000000)
+    * @param bool $onlyActive Возвращать только активные статьи (по умолчанию true)
     * @param int $categoryId Вернуть статьи только из категории с указанным ID
     * @param string $order Столбец, по которому выполняется сортировка статей (по умолчанию = "publicationDate DESC")
     * @return Array|false Двух элементный массив: results => массив объектов Article; totalRows => общее количество строк
     */
-    public static function getList($numRows=1000000, 
-            $categoryId=null, $order="publicationDate DESC") 
+    public static function getList($numRows=1000000, $onlyActive=true,
+            $categoryId=null, $order="publicationDate DESC")
     {
         $conn = new PDO(DB_DSN, DB_USERNAME, DB_PASSWORD);
         $categoryClause = $categoryId ? "WHERE categoryId = :categoryId" : "";
-        $sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) 
-                AS publicationDate
-                FROM articles $categoryClause
-                ORDER BY  $order  LIMIT :numRows";
+        if ($onlyActive) {
+            $sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) 
+                    AS publicationDate
+                    FROM articles $categoryClause
+                    WHERE isActive = 1
+                    ORDER BY  $order  LIMIT :numRows";
+        } else
+            $sql = "SELECT SQL_CALC_FOUND_ROWS *, UNIX_TIMESTAMP(publicationDate) 
+                    AS publicationDate
+                    FROM articles $categoryClause
+                    ORDER BY  $order  LIMIT :numRows";
         
         $st = $conn->prepare($sql);
 //                        echo "<pre>";
@@ -201,13 +219,14 @@ class Article
 
         // Вставляем статью
         $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
-        $sql = "INSERT INTO articles ( publicationDate, categoryId, title, summary, content ) VALUES ( FROM_UNIXTIME(:publicationDate), :categoryId, :title, :summary, :content )";
+        $sql = "INSERT INTO articles ( publicationDate, categoryId, title, summary, content, active ) VALUES ( FROM_UNIXTIME(:publicationDate), :categoryId, :title, :summary, :content, :active )";
         $st = $conn->prepare ( $sql );
         $st->bindValue( ":publicationDate", $this->publicationDate, PDO::PARAM_INT );
         $st->bindValue( ":categoryId", $this->categoryId, PDO::PARAM_INT );
         $st->bindValue( ":title", $this->title, PDO::PARAM_STR );
         $st->bindValue( ":summary", $this->summary, PDO::PARAM_STR );
         $st->bindValue( ":content", $this->content, PDO::PARAM_STR );
+        $st->bindValue( ":active", $this->isActive, PDO::PARAM_STR );
         $st->execute();
         $this->id = $conn->lastInsertId();
         $conn = null;
@@ -223,11 +242,13 @@ class Article
               . "Attempt to update an Article object "
               . "that does not have its ID property set.", E_USER_ERROR );
 
+      $this->isActive = (isset($_REQUEST['isActive'])) ?1 : 0;
+
       // Обновляем статью
       $conn = new PDO( DB_DSN, DB_USERNAME, DB_PASSWORD );
       $sql = "UPDATE articles SET publicationDate=FROM_UNIXTIME(:publicationDate),"
               . " categoryId=:categoryId, title=:title, summary=:summary,"
-              . " content=:content WHERE id = :id";
+              . " content=:content, active=:active WHERE id = :id";
       
       $st = $conn->prepare ( $sql );
       $st->bindValue( ":publicationDate", $this->publicationDate, PDO::PARAM_INT );
@@ -236,6 +257,7 @@ class Article
       $st->bindValue( ":summary", $this->summary, PDO::PARAM_STR );
       $st->bindValue( ":content", $this->content, PDO::PARAM_STR );
       $st->bindValue( ":id", $this->id, PDO::PARAM_INT );
+      $st->bindValue( ":active", $this->isActive, PDO::PARAM_INT );
       $st->execute();
       $conn = null;
     }

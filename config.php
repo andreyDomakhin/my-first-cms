@@ -3,6 +3,7 @@ try {
     // Включаем полное отображение ошибок
     ini_set("display_errors", true);
     error_reporting(E_ALL);
+    mb_internal_encoding('UTF-8');
     
     date_default_timezone_set("Europe/Moscow");  // http://www.php.net/manual/en/timezones.php
     
@@ -31,6 +32,7 @@ try {
     // Подключаем Классы моделей (классы, отвечающие за работу с сущностями базы данных)
     require(CLASS_PATH . "/Article.php");
     require(CLASS_PATH . "/Category.php");     
+    require(CLASS_PATH . "/User.php");
 
 } catch (Exception $ex) {
     echo "При загрузке конфигураций возникла проблема!<br><br>";
